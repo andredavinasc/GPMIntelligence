@@ -1,6 +1,7 @@
 # GPM Intelligence Frontend
 
-Análise estratégica semanal para Group Product Managers.
+Para Group Product Managers e Product Owners.
+O GPM Intelligence cruza seus OKRs, portfólio, métricas de agilidade e sinais de mercado — e entrega toda semana uma análise estratégica pronta, com riscos identificados e pauta gerada.
 
 ## Stack
 
