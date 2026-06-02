@@ -49,6 +49,22 @@ interface NarrativaFinal {
     motivo?: string
     acao?: string
   }>
+  pipeline_proximo_semestre?: Array<{
+    iniciativa?: string
+    equipe_responsavel?: string
+    lead_time_p85_equipe?: string
+    prazo_limite_estruturacao?: string
+    status?: string
+    acao?: string
+  }>
+  capacidade_vs_okr_crescimento?: Array<{
+    okr_titulo?: string
+    equipe_responsavel?: string
+    throughput_semanal?: number
+    variabilidade?: string
+    pct_throughput_em_iniciativas_estrategicas?: number
+    conclusao?: string
+  }>
   comparacao_semana_anterior?: {
     status?: string
     narrativa?: string
@@ -100,6 +116,26 @@ interface AgentEstrategia {
   total_objetivos: number
   total_key_results: number
   area_foco: string
+  objetivos_analisados?: Array<{
+    id: string
+    titulo: string
+    ambicao?: string
+    key_results?: Array<{
+      id: string
+      titulo: string
+      valor_realizado: number
+      meta_trimestre_atual: number
+      meta_anual: number
+      pct_atingimento_trimestre: number
+      gap_trimestre: number
+      gap_ano: number
+      projecao: string
+      qualidade_kr: string
+      observacao?: string
+    }>
+    atingimento_resumo?: string
+  }>
+  padroes_identificados?: string
   gaps_estrategicos: string[]
   recomendacoes: Array<{
     prioridade: number
@@ -206,6 +242,12 @@ export function generateAnalysisHTML(analysis: WeeklyAnalysis): string {
     const okrsVsPortfolio = Array.isArray(narrativa.okrs_vs_portfolio) ? narrativa.okrs_vs_portfolio : []
     const recomendacoes = Array.isArray(narrativa.recomendacoes_proxima_semana) ? narrativa.recomendacoes_proxima_semana : []
     const pautaReuniao = Array.isArray(narrativa.pauta_reuniao) ? narrativa.pauta_reuniao : []
+    const iniciativasCriticas = Array.isArray(narrativa.iniciativas_criticas) ? narrativa.iniciativas_criticas : []
+    const pipelineProximo = Array.isArray(narrativa.pipeline_proximo_semestre) ? narrativa.pipeline_proximo_semestre : []
+    const capacidadeVsOkr = Array.isArray(narrativa.capacidade_vs_okr_crescimento) ? narrativa.capacidade_vs_okr_crescimento : []
+    const sinaisExternos = narrativa.sinais_externos || {}
+    const agilidadeResumo = narrativa.agilidade_resumo || {}
+    const comparacaoSemana = narrativa.comparacao_semana_anterior || {}
 
     const html = `
 <!DOCTYPE html>
@@ -429,6 +471,97 @@ export function generateAnalysisHTML(analysis: WeeklyAnalysis): string {
       line-height: 1.6;
       font-size: 14px;
     }
+    .two-column {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .info-card {
+      background: #f3f4f6;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid #6b7280;
+    }
+    .info-card.economic {
+      border-left-color: #0284c7;
+      background: #dbeafe;
+    }
+    .info-card.regulatory {
+      border-left-color: #dc2626;
+      background: #fee2e2;
+    }
+    .info-card.market {
+      border-left-color: #ea580c;
+      background: #fed7aa;
+    }
+    .info-card.cyber {
+      border-left-color: #dc2626;
+      background: #fee2e2;
+    }
+    .info-card-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .info-card-content {
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .pipeline-item {
+      background: #f9fafb;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border-left: 4px solid #7c3aed;
+    }
+    .pipeline-title {
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 8px;
+    }
+    .pipeline-meta {
+      font-size: 12px;
+      color: #6b7280;
+      margin: 4px 0;
+    }
+    .pipeline-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .pipeline-status.em_risco {
+      background-color: #fed7aa;
+      color: #92400e;
+    }
+    .pipeline-status.critico {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+    .capacity-item {
+      background: #f9fafb;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border-left: 4px solid #2d5a3d;
+    }
+    .regulatory-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .regulatory-table th,
+    .regulatory-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .regulatory-table th {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
     @media print {
       .container {
         max-width: 100%;
@@ -492,6 +625,162 @@ export function generateAnalysisHTML(analysis: WeeklyAnalysis): string {
       </div>
       ` : ''}
     </div>
+
+    <!-- AGILIDADE RESUMIDA -->
+    ${Object.keys(agilidadeResumo).length > 0 ? `
+    <div class="section">
+      <div class="section-title">⚡ Resumo de Agilidade</div>
+      <div class="two-column">
+        ${agilidadeResumo.equipe_melhor_desempenho ? `
+        <div class="info-card economic">
+          <div class="info-card-title">📈 Equipe com Melhor Desempenho</div>
+          <div class="info-card-content">${agilidadeResumo.equipe_melhor_desempenho}</div>
+        </div>
+        ` : ''}
+        ${agilidadeResumo.equipe_maior_risco ? `
+        <div class="info-card market">
+          <div class="info-card-title">⚠️ Equipe com Maior Risco</div>
+          <div class="info-card-content">${agilidadeResumo.equipe_maior_risco}</div>
+        </div>
+        ` : ''}
+        ${agilidadeResumo.principal_sinal ? `
+        <div class="info-card economic">
+          <div class="info-card-title">🔔 Principal Sinal Identificado</div>
+          <div class="info-card-content">${agilidadeResumo.principal_sinal}</div>
+        </div>
+        ` : ''}
+        ${agilidadeResumo.impacto_nos_okrs ? `
+        <div class="info-card regulatory">
+          <div class="info-card-title">🎯 Impacto nos OKRs</div>
+          <div class="info-card-content">${agilidadeResumo.impacto_nos_okrs}</div>
+        </div>
+        ` : ''}
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- SINAIS EXTERNOS -->
+    ${Object.keys(sinaisExternos).length > 0 ? `
+    <div class="section">
+      <div class="section-title">🌍 Sinais Externos</div>
+      <div class="two-column">
+        ${sinaisExternos.indicadores_economicos ? `
+        <div class="info-card economic">
+          <div class="info-card-title">💹 Indicadores Econômicos</div>
+          <div class="info-card-content">${sinaisExternos.indicadores_economicos}</div>
+        </div>
+        ` : ''}
+        ${sinaisExternos.mercado_impacta_estrategia ? `
+        <div class="info-card market">
+          <div class="info-card-title">📊 Mercado e Estratégia</div>
+          <div class="info-card-content">${sinaisExternos.mercado_impacta_estrategia}</div>
+        </div>
+        ` : ''}
+        ${sinaisExternos.alerta_cyber ? `
+        <div class="info-card cyber">
+          <div class="info-card-title">🔐 Alertas de Segurança Cibernética</div>
+          <div class="info-card-content">${sinaisExternos.alerta_cyber}</div>
+        </div>
+        ` : ''}
+      </div>
+      ${sinaisExternos.regulatorio_impacta_portfolio && Array.isArray(sinaisExternos.regulatorio_impacta_portfolio) && sinaisExternos.regulatorio_impacta_portfolio.length > 0 ? `
+      <div style="margin-top: 20px;">
+        <h4 style="margin-bottom: 12px; font-weight: 600;">📋 Impacto Regulatório no Portfólio</h4>
+        <table class="regulatory-table">
+          <thead>
+            <tr>
+              <th>Norma/Regulação</th>
+              <th>Iniciativa Afetada</th>
+              <th>Nível de Risco</th>
+              <th>Ação Recomendada</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sinaisExternos.regulatorio_impacta_portfolio.map(reg => `
+            <tr>
+              <td>${reg.norma || '-'}</td>
+              <td>${reg.iniciativa_afetada || '-'}</td>
+              <td><span style="background: ${reg.risco?.toLowerCase() === 'critico' ? '#fee2e2' : reg.risco?.toLowerCase() === 'alto' ? '#fed7aa' : '#dcfce7'}; color: ${reg.risco?.toLowerCase() === 'critico' ? '#991b1b' : reg.risco?.toLowerCase() === 'alto' ? '#92400e' : '#15803d'}; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">${reg.risco || '-'}</span></td>
+              <td>${reg.acao || '-'}</td>
+            </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      ` : ''}
+    </div>
+    ` : ''}
+
+    <!-- COMPARAÇÃO SEMANA ANTERIOR -->
+    ${comparacaoSemana.narrativa ? `
+    <div class="section">
+      <div class="section-title">📈 Comparação com Semana Anterior</div>
+      <div class="narrative-box" style="background: #f0fdf4; border-color: #86efac;">
+        <p style="color: #15803d;">${comparacaoSemana.narrativa}</p>
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- INICIATIVAS CRÍTICAS -->
+    ${iniciativasCriticas.length > 0 ? `
+    <div class="section">
+      <div class="section-title">🚨 Iniciativas Críticas</div>
+      ${iniciativasCriticas.map(init => `
+      <div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+        <div style="font-weight: 600; color: #991b1b; margin-bottom: 8px; font-size: 15px;">${init.titulo || 'Iniciativa sem título'}</div>
+        <div style="color: #7f1d1d; font-size: 13px; margin-bottom: 8px;">
+          <strong>Equipe:</strong> ${init.equipe_responsavel || '-'} | <strong>Semestre:</strong> ${init.semestre || '-'}
+        </div>
+        ${init.motivo ? `<div style="color: #7f1d1d; font-size: 13px; margin-bottom: 8px;"><strong>Motivo:</strong> ${init.motivo}</div>` : ''}
+        ${init.acao ? `<div style="background: #fecaca; padding: 8px 12px; border-radius: 4px; color: #7f1d1d; font-size: 13px;"><strong>Ação:</strong> ${init.acao}</div>` : ''}
+      </div>
+      `).join('')}
+    </div>
+    ` : ''}
+
+    <!-- CAPACIDADE vs OKR CRESCIMENTO -->
+    ${capacidadeVsOkr.length > 0 ? `
+    <div class="section">
+      <div class="section-title">📊 Capacidade vs OKR Crescimento</div>
+      ${capacidadeVsOkr.map(cap => `
+      <div class="capacity-item">
+        <div class="okr-title">${cap.okr_titulo || 'OKR sem título'}</div>
+        <div style="color: #6b7280; font-size: 13px; margin: 8px 0;">
+          <strong>Equipe:</strong> ${cap.equipe_responsavel || '-'} |
+          <strong>Throughput Semanal:</strong> ${cap.throughput_semanal ?? '-'} items |
+          <strong>Variabilidade:</strong> ${cap.variabilidade || '-'}
+        </div>
+        ${cap.pct_throughput_em_iniciativas_estrategicas ? `
+        <div style="color: #6b7280; font-size: 13px; margin: 8px 0;">
+          <strong>% Throughput em Iniciativas Estratégicas:</strong> ${cap.pct_throughput_em_iniciativas_estrategicas}%
+        </div>
+        ` : ''}
+        ${cap.conclusao ? `
+        <div style="background: #e0e7ff; padding: 12px; border-radius: 4px; color: #312e81; font-size: 13px; margin-top: 8px;">
+          <strong>Conclusão:</strong> ${cap.conclusao}
+        </div>
+        ` : ''}
+      </div>
+      `).join('')}
+    </div>
+    ` : ''}
+
+    <!-- PIPELINE PRÓXIMO SEMESTRE -->
+    ${pipelineProximo.length > 0 ? `
+    <div class="section">
+      <div class="section-title">🗓️ Pipeline Próximo Semestre</div>
+      ${pipelineProximo.map(pipe => `
+      <div class="pipeline-item">
+        <div class="pipeline-title">${pipe.iniciativa || 'Iniciativa sem título'}</div>
+        <div class="pipeline-meta"><strong>Equipe:</strong> ${pipe.equipe_responsavel || '-'}</div>
+        ${pipe.lead_time_p85_equipe ? `<div class="pipeline-meta"><strong>Lead Time P85 (Equipe):</strong> ${pipe.lead_time_p85_equipe}</div>` : ''}
+        ${pipe.prazo_limite_estruturacao ? `<div class="pipeline-meta"><strong>Prazo Limite Estruturação:</strong> ${pipe.prazo_limite_estruturacao}</div>` : ''}
+        ${pipe.status ? `<span class="pipeline-status ${pipe.status.toLowerCase()}">${pipe.status?.toUpperCase()}</span>` : ''}
+        ${pipe.acao ? `<div style="color: #6b7280; font-size: 13px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;"><strong>Ação:</strong> ${pipe.acao}</div>` : ''}
+      </div>
+      `).join('')}
+    </div>
+    ` : ''}
 
     <!-- ALERTAS -->
     ${alertas.length > 0 ? `
@@ -648,6 +937,17 @@ export function generateEstrategiaHTML(analysis: WeeklyAnalysis): string {
     .metric { background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 16px; }
     .metric-label { color: #6b7280; font-size: 14px; margin-bottom: 8px; }
     .metric-value { font-size: 28px; font-weight: 700; color: #2d5a3d; }
+    .objective-item { background: #f0f9ff; border-left: 4px solid #0284c7; padding: 16px; margin-bottom: 16px; border-radius: 4px; }
+    .objective-title { font-weight: 600; color: #0c4a6e; font-size: 16px; margin-bottom: 8px; }
+    .objective-ambicao { color: #164e63; font-size: 14px; margin-bottom: 12px; font-style: italic; }
+    .kr-item { background: white; padding: 12px; margin-bottom: 8px; border-left: 3px solid #06b6d4; border-radius: 3px; }
+    .kr-title { font-weight: 500; color: #0c4a6e; margin-bottom: 4px; }
+    .kr-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; font-size: 12px; }
+    .kr-metric { background: #f9fafb; padding: 6px; border-radius: 3px; }
+    .kr-metric-label { color: #6b7280; }
+    .kr-metric-value { font-weight: 600; color: #0c4a6e; }
+    .kr-observacao { color: #475569; font-size: 13px; margin-top: 8px; }
+    .padroes-text { background: #f3f4f6; padding: 16px; border-radius: 8px; color: #374151; line-height: 1.8; }
     .gap-item { background: #fee2e2; border-left: 4px solid #dc2626; padding: 16px; margin-bottom: 12px; border-radius: 4px; }
     .gap-item-title { font-weight: 600; color: #991b1b; margin-bottom: 4px; }
     .gap-item-text { color: #7f1d1d; font-size: 14px; }
@@ -682,6 +982,77 @@ export function generateEstrategiaHTML(analysis: WeeklyAnalysis): string {
           <div style="font-size: 18px; font-weight: 600; color: #2d5a3d; margin-top: 8px;">${estrategia.area_foco}</div>
         </div>
       </div>
+    </div>
+
+    <!-- PADRÕES IDENTIFICADOS -->
+    <div class="section">
+      <div class="section-title">🔍 Padrões Identificados</div>
+      ${estrategia.padroes_identificados
+        ? `<div class="padroes-text">${estrategia.padroes_identificados}</div>`
+        : `<div style="padding: 20px; color: #9ca3af; background: #f3f4f6; border-radius: 8px;">Nenhum padrão identificado nesta semana.</div>`
+      }
+    </div>
+
+    <!-- OBJETIVOS ANALISADOS -->
+    <div class="section">
+      <div class="section-title">🎯 Objetivos Analisados</div>
+      ${estrategia.objetivos_analisados && estrategia.objetivos_analisados.length > 0
+        ? `
+        ${estrategia.objetivos_analisados
+          .map(
+            (obj) => `
+          <div class="objective-item">
+            <div class="objective-title">${obj.titulo}</div>
+            ${obj.ambicao ? `<div class="objective-ambicao">${obj.ambicao}</div>` : ''}
+            ${
+              obj.key_results && obj.key_results.length > 0
+                ? `
+              <div style="margin-top: 12px;">
+                <strong style="color: #0c4a6e;">Key Results:</strong>
+                ${obj.key_results
+                  .map(
+                    (kr) => `
+                  <div class="kr-item">
+                    <div class="kr-title">${kr.titulo}</div>
+                    <div class="kr-metrics">
+                      <div class="kr-metric">
+                        <div class="kr-metric-label">Realizado</div>
+                        <div class="kr-metric-value">${kr.valor_realizado}</div>
+                      </div>
+                      <div class="kr-metric">
+                        <div class="kr-metric-label">Meta T${new Date().getMonth() > 8 ? 4 : Math.floor(new Date().getMonth() / 3) + 1}</div>
+                        <div class="kr-metric-value">${kr.meta_trimestre_atual}</div>
+                      </div>
+                      <div class="kr-metric">
+                        <div class="kr-metric-label">Meta Anual</div>
+                        <div class="kr-metric-value">${kr.meta_anual}</div>
+                      </div>
+                      <div class="kr-metric">
+                        <div class="kr-metric-label">Atingimento</div>
+                        <div class="kr-metric-value">${kr.pct_atingimento_trimestre.toFixed(1)}%</div>
+                      </div>
+                      <div class="kr-metric">
+                        <div class="kr-metric-label">Projeção</div>
+                        <div class="kr-metric-value" style="color: ${kr.projecao === 'no_prazo' ? '#16a34a' : kr.projecao === 'em_risco' ? '#f97316' : '#dc2626'};">${kr.projecao.replace('_', ' ')}</div>
+                      </div>
+                    </div>
+                    ${kr.observacao ? `<div class="kr-observacao"><strong>Obs.:</strong> ${kr.observacao}</div>` : ''}
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+            `
+                : ''
+            }
+            ${obj.atingimento_resumo ? `<div style="margin-top: 12px; color: #475569; font-size: 14px; padding: 10px; background: white; border-radius: 4px;"><strong>Resumo:</strong> ${obj.atingimento_resumo}</div>` : ''}
+          </div>
+        `
+          )
+          .join('')}
+        `
+        : `<div style="padding: 20px; color: #9ca3af; background: #f3f4f6; border-radius: 8px;">Nenhum objetivo analisado nesta semana.</div>`
+      }
     </div>
 
     <!-- GAPS ESTRATÉGICOS -->

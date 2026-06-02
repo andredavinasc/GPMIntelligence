@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
+import { higienizarPayload } from './higienizarPayload'
 
 export async function parseFile(file: File): Promise<Record<string, unknown>[]> {
   const fileName = file.name.toLowerCase()
@@ -23,7 +24,8 @@ async function parseCSV(file: File): Promise<Record<string, unknown>[]> {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          resolve(results.data as Record<string, unknown>[])
+          const parsed = results.data as Record<string, unknown>[]
+          resolve(higienizarPayload(parsed))
         },
         error: (error: Error) => {
           reject(new Error(`Erro ao processar CSV: ${error.message}`))
@@ -50,7 +52,7 @@ async function parseExcel(file: File): Promise<Record<string, unknown>[]> {
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
         const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet)
-        resolve(rows)
+        resolve(higienizarPayload(rows))
       } catch (error) {
         reject(new Error(`Erro ao processar Excel: ${error instanceof Error ? error.message : String(error)}`))
       }

@@ -75,9 +75,9 @@ export function PainelStatus({
   const canAnalyze = workItemsBloco && capexOpexBloco && (workItemsBloco.total_registros ?? 0) > 0 && (capexOpexBloco.total_registros ?? 0) > 0
 
   return (
-    <div className="h-auto lg:h-full bg-white rounded-lg shadow-sm p-3 sm:p-4 overflow-y-auto flex flex-col">
+    <div className="h-auto lg:h-full bg-[#1a2e22] border-r border-[rgba(196,162,100,0.18)] rounded p-3 sm:p-4 overflow-y-auto flex flex-col">
       <div className="mb-4 sm:mb-6 flex-1">
-        <h2 className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 sm:mb-3">
+        <h2 className="gpm-section-label mb-2 sm:mb-3">
           DADOS DA SEMANA
         </h2>
 
@@ -96,6 +96,7 @@ export function PainelStatus({
             }
           }}
           loading={analysisLoading}
+          semanaRef={semanaRef}
         />
 
         <BlocoUpload
@@ -113,6 +114,7 @@ export function PainelStatus({
             }
           }}
           loading={analysisLoading}
+          semanaRef={semanaRef}
         />
 
         <BlocoUpload
@@ -130,19 +132,10 @@ export function PainelStatus({
             }
           }}
           loading={analysisLoading}
+          semanaRef={semanaRef}
         />
 
         <CapexOpexBloco semanaRef={semanaRef} />
-
-        <BlocoUpload
-          titulo="Clipping"
-          badge="Automático"
-          ultimaAtualizacao={getBlocoByNome('clipping')?.ultima_atualizacao ? new Date(getBlocoByNome('clipping')!.ultima_atualizacao) : null}
-          totalRegistros={getBlocoByNome('clipping')?.total_registros || 0}
-          onUpload={async () => {}}
-          loading={false}
-          readonly={true}
-        />
       </div>
 
       <div className="space-y-3 mb-3">
@@ -150,41 +143,41 @@ export function PainelStatus({
           onClick={handleAnalysis}
           disabled={!canAnalyze || analysisLoading}
           title={!canAnalyze ? 'Carregue os dados de Work Items e CAPEX/OPEX para rodar a análise' : ''}
-          className="w-full py-2 bg-green-700 hover:bg-green-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+          className="w-full py-2 bg-[rgba(45,90,61,0.6)] hover:bg-[rgba(45,90,61,0.8)] disabled:bg-[rgba(250,248,243,0.1)] disabled:cursor-not-allowed text-[#7fc49a] disabled:text-[rgba(250,248,243,0.3)] font-bold border border-[rgba(45,90,61,0.8)] rounded transition-colors flex items-center justify-center gap-2 text-sm"
         >
-          <Play size={16} fill="white" />
+          <Play size={16} fill="currentColor" />
           {analysisLoading ? LOADING_MESSAGES[messageIndex] : 'RODAR ANÁLISE'}
         </button>
 
         {analysisLoading && (
-          <div className="bg-blue-50 border border-blue-200 rounded p-2">
-            <p className="text-xs text-blue-700">Pode levar 1-2 minutos para processar...</p>
+          <div className="bg-[rgba(196,162,100,0.1)] border border-[rgba(196,162,100,0.2)] rounded p-2">
+            <p className="text-xs text-[#c4a264]">Pode levar 1-2 minutos para processar...</p>
           </div>
         )}
 
         {analysisCompleted && (
-          <div className="bg-green-50 border border-green-200 rounded p-2">
-            <p className="text-xs text-green-700">✓ Análise gerada às {formatDateTime(new Date())}</p>
+          <div className="bg-[rgba(45,90,61,0.2)] border border-[rgba(45,90,61,0.4)] rounded p-2">
+            <p className="text-xs text-[#7fc49a]">✓ Análise gerada às {formatDateTime(new Date())}</p>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded p-2">
-            <p className="text-xs text-red-700">{error}</p>
+          <div className="bg-[rgba(122,36,36,0.2)] border border-[rgba(122,36,36,0.4)] rounded p-2">
+            <p className="text-xs text-[#fdf0f0]">{error}</p>
           </div>
         )}
       </div>
 
-      <div className="border-t pt-3 mt-auto">
+      <div className="border-t border-[rgba(196,162,100,0.12)] pt-3 mt-auto">
         <div className="flex items-center justify-between">
           <div>
             {user && (
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              <p className="text-xs text-[rgba(250,248,243,0.4)] truncate">{user.email}</p>
             )}
           </div>
           <button
             onClick={handleLogout}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+            className="p-2 text-[rgba(250,248,243,0.6)] hover:text-[rgba(250,248,243,1)] hover:bg-[rgba(250,248,243,0.05)] rounded transition-colors"
             title="Fazer logout"
           >
             <LogOut size={18} />
@@ -203,8 +196,31 @@ function CapexOpexBloco({ semanaRef }: CapexOpexBlocoProps) {
   const [capex, setCapex] = useState(75)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [configLoading, setConfigLoading] = useState(true)
+  const [metaCapex, setMetaCapex] = useState(80)
+  const [metaOpex, setMetaOpex] = useState(20)
 
   const opex = 100 - capex
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/api/configuracao')
+        const data = await response.json()
+        if (data) {
+          setMetaCapex(data.objetivo_capex ?? 80)
+          setMetaOpex(data.objetivo_opex ?? 20)
+          setCapex(data.objetivo_capex ?? 80)
+        }
+      } catch (err) {
+        console.error('Erro ao carregar configuração:', err)
+      } finally {
+        setConfigLoading(false)
+      }
+    }
+
+    loadConfig()
+  }, [])
 
   const handleCapexChange = (value: number) => {
     setCapex(value)
@@ -226,18 +242,22 @@ function CapexOpexBloco({ semanaRef }: CapexOpexBlocoProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-3 mb-3">
+    <div className="bg-[rgba(0,0,0,0.2)] rounded border border-[rgba(196,162,100,0.18)] p-3 mb-3">
       <div className="mb-3">
-        <h3 className="font-semibold text-sm text-gray-800">CAPEX / OPEX</h3>
-        <span className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded inline-block mt-1">
+        <h3 className="gpm-section-label">CAPEX / OPEX</h3>
+        <span className="text-xs bg-[rgba(196,162,100,0.15)] text-[#c4a264] px-2 py-1 inline-block mt-1">
           SEMANAL
         </span>
       </div>
 
       <div className="mb-3">
         <div className="flex justify-between items-center mb-3">
-          <label className="block text-sm font-medium text-gray-700">Distribuição</label>
-          <p className="text-xs text-gray-600">Meta: 80% CAPEX / 20% OPEX</p>
+          <label className="block text-sm font-medium text-[rgba(250,248,243,0.5)]">Distribuição</label>
+          {configLoading ? (
+            <p className="text-xs text-[rgba(250,248,243,0.4)]">Carregando meta...</p>
+          ) : (
+            <p className="text-xs text-[rgba(250,248,243,0.4)]">Meta: {metaCapex}% CAPEX / {metaOpex}% OPEX</p>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -248,50 +268,50 @@ function CapexOpexBloco({ semanaRef }: CapexOpexBlocoProps) {
               max="100"
               value={capex}
               onChange={(e) => handleCapexChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-700"
+              className="w-full h-2 bg-[rgba(250,248,243,0.1)] rounded appearance-none cursor-pointer accent-[#c4a264]"
             />
           </div>
 
           <div className="flex gap-4 text-sm">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-3 h-3 bg-green-700 rounded-sm"></div>
-                <span className="text-gray-600">CAPEX</span>
+                <div className="w-3 h-3 bg-[#c4a264] rounded-sm"></div>
+                <span className="text-[rgba(250,248,243,0.5)]">CAPEX</span>
               </div>
-              <p className="text-2xl font-bold text-green-700">{capex}%</p>
+              <p className="text-2xl font-bold text-[#c4a264]">{capex}%</p>
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-3 h-3 bg-blue-600 rounded-sm"></div>
-                <span className="text-gray-600">OPEX</span>
+                <div className="w-3 h-3 bg-[#2d5a3d] rounded-sm"></div>
+                <span className="text-[rgba(250,248,243,0.5)]">OPEX</span>
               </div>
-              <p className="text-2xl font-bold text-blue-600">{opex}%</p>
+              <p className="text-2xl font-bold text-[#7fc49a]">{opex}%</p>
             </div>
           </div>
 
-          <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden flex">
+          <div className="w-full bg-[rgba(250,248,243,0.1)] h-6 overflow-hidden flex">
             <div
               style={{ width: `${capex}%` }}
-              className="bg-green-700 transition-all duration-200"
+              className="bg-[#c4a264] transition-all duration-200"
             ></div>
             <div
               style={{ width: `${opex}%` }}
-              className="bg-blue-600 transition-all duration-200"
+              className="bg-[#2d5a3d] transition-all duration-200"
             ></div>
           </div>
         </div>
       </div>
 
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded p-2 mb-3">
-          <p className="text-xs text-green-700">✓ CAPEX/OPEX salvo com sucesso</p>
+        <div className="bg-[rgba(45,90,61,0.2)] border border-[rgba(45,90,61,0.4)] rounded p-2 mb-3">
+          <p className="text-xs text-[#7fc49a]">✓ CAPEX/OPEX salvo com sucesso</p>
         </div>
       )}
 
       <button
         onClick={handleSave}
         disabled={loading}
-        className="w-full px-3 py-2 bg-green-700 hover:bg-green-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors"
+        className="w-full px-3 py-2 bg-[rgba(45,90,61,0.35)] hover:bg-[rgba(45,90,61,0.55)] disabled:bg-[rgba(250,248,243,0.1)] disabled:cursor-not-allowed text-[#7fc49a] disabled:text-[rgba(250,248,243,0.3)] border border-[rgba(45,90,61,0.6)] rounded text-sm font-medium transition-colors"
       >
         {loading ? 'Salvando...' : 'Salvar'}
       </button>
@@ -301,12 +321,12 @@ function CapexOpexBloco({ semanaRef }: CapexOpexBlocoProps) {
 
 function HistoricoItem({ semana, status }: { semana: string; status: string }) {
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-100">
+    <div className="flex items-center justify-between p-3 bg-[rgba(0,0,0,0.15)] rounded border border-[rgba(196,162,100,0.12)]">
       <div className="flex items-center gap-2">
-        <span className="text-green-600">✓</span>
-        <span className="text-sm text-gray-700">{semana}</span>
+        <span className="text-[#7fc49a]">✓</span>
+        <span className="text-sm text-[rgba(250,248,243,0.5)]">{semana}</span>
       </div>
-      <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">Ver</button>
+      <button className="text-xs text-[#8b6f3a] hover:text-[#c4a264] font-medium">Ver</button>
     </div>
   )
 }

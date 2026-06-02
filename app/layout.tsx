@@ -15,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>GPM Intelligence</title>
         <meta name="description" content="Análise estratégica semanal para Group Product Managers" />
       </head>

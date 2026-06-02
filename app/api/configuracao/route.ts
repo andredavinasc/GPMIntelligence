@@ -1,31 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createSupabaseServer } from '@/lib/supabase-server'
 
 export async function GET() {
   try {
-    const { supabase } = await import('@/lib/supabase')
+    const supabase = createSupabaseServer()
 
-    const { data, error } = await supabase.from('configuracao').select('*').single()
+    const { data, error } = await supabase.from('configuracao').select('*').maybeSingle()
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
+      console.error('Erro ao carregar configuração:', error)
       throw error
     }
 
-    return NextResponse.json(data || null)
+    console.log('✓ Configuracao loaded successfully:', data ? 'Data found' : 'No data')
+
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Erro ao carregar configuração:', error)
-    return NextResponse.json({ error: 'Erro ao carregar configuração' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Erro ao carregar configuração' },
+      { status: 500 }
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { empresa, setor, nome, objetivo } = await request.json()
+    const {
+      empresa,
+      setor,
+      nome,
+      objetivo,
+      objetivo_capex,
+      objetivo_opex,
+      hierarquia_trabalho,
+      modelo_trabalho,
+    } = await request.json()
 
     if (!empresa || !setor || !nome || !objetivo) {
       return NextResponse.json({ error: 'Todos os campos são obrigatórios' }, { status: 400 })
     }
 
-    const { supabase } = await import('@/lib/supabase')
+    // Validation for CAPEX/OPEX: both empty (0) or both filled and sum to 100
+    const capexValue = objetivo_capex ?? 0
+    const opexValue = objetivo_opex ?? 0
+    const hasCapex = capexValue > 0
+    const hasOpex = opexValue > 0
+    const isCapexOpexValid =
+      (!hasCapex && !hasOpex) || // Both empty - valid
+      (hasCapex && hasOpex && capexValue + opexValue === 100) // Both set and sum to 100 - valid
+
+    if (!isCapexOpexValid) {
+      return NextResponse.json(
+        { error: 'Se informar CAPEX/OPEX, ambos campos são obrigatórios e devem somar 100%' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = createSupabaseServer()
 
     // Buscar configuração existente
     const { data: existente, error: selectError } = await supabase
@@ -49,6 +81,10 @@ export async function POST(request: NextRequest) {
           setor,
           nome,
           objetivo,
+          objetivo_capex: capexValue || 0,
+          objetivo_opex: opexValue || 0,
+          hierarquia_trabalho: hierarquia_trabalho || '',
+          modelo_trabalho: modelo_trabalho || '',
           updated_at: new Date().toISOString(),
         })
         .eq('id', existente.id)
@@ -69,6 +105,10 @@ export async function POST(request: NextRequest) {
           setor,
           nome,
           objetivo,
+          objetivo_capex: capexValue || 0,
+          objetivo_opex: opexValue || 0,
+          hierarquia_trabalho: hierarquia_trabalho || '',
+          modelo_trabalho: modelo_trabalho || '',
         })
         .select()
         .single()

@@ -42,6 +42,10 @@ export interface Configuracao {
   setor: string
   nome: string
   objetivo: string
+  objetivo_capex: number
+  objetivo_opex: number
+  hierarquia_trabalho: string
+  modelo_trabalho: string
   created_at: string
   updated_at: string
 }

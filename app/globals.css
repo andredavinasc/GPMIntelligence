@@ -1,6 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,700;1,700&family=DM+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --serif:      'Cormorant Garamond', Georgia, serif;
+  --paper:      #faf8f3;
+  --paper-2:    #f2efe8;
+  --rule:       #d4cfc4;
+  --ink:        #1a1712;
+  --ink-2:      #3d3a33;
+  --ink-3:      #6b6760;
+  --dark:       #1a2e22;
+  --gold:       #8b6f3a;
+  --gold-light: #c4a264;
+  --gold-pale:  #f0e6d0;
+  --green:      #2d5a3d;
+  --red:        #7a2424;
+  --red-pale:   #fdf0f0;
+}
 
 * {
   margin: 0;
@@ -18,7 +37,43 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
+  background-color: var(--paper);
+}
+
+/* Espaçamento do bloco de logo no topbar — reduzido em mobile */
+.topbar-logo {
+  padding-right: 12px;
+  margin-right: 12px;
+  border-right: 1px solid rgba(255,255,255,.1);
+}
+@media (min-width: 640px) {
+  .topbar-logo {
+    padding-right: 28px;
+    margin-right: 36px;
+  }
+}
+
+/* Logo GPM Intelligence — topbar e login */
+.gpm-logo {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  line-height: 1;
+}
+
+.gpm-logo em {
+  font-style: italic;
+}
+
+/* Scoped to topbar and sidebar only — never applied globally */
+.gpm-section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.20em;
+  color: var(--gold-light);
 }
 
 @media print {
@@ -27,6 +82,6 @@ body {
   }
 
   body {
-    background-color: white;
+    background-color: var(--paper);
   }
 }

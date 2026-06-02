@@ -6,9 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate": "ts-node scripts/run-migration.ts",
+    "migrate:python": "python3 scripts/run-migration.py"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.38.0",
     "date-fns": "latest",
     "html2canvas": "^1.4.1",
